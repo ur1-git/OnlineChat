@@ -7,11 +7,11 @@
 La consola muestra:
 
 ```text
-Servidor escuchando en el puerto 5000
-Cuentas: .../usuarios.txt
+Servidor preparado en el puerto 40000.
+Cada cliente debe usar REGISTER y después LOGIN.
 ```
 
-La ruta depende de dónde se ejecuta el programa. Abrir ahora dos clientes.
+Ejecutar MainSrv.java para abrir el servidor y Main.java dos veces para abrir dos clientes.
 
 ## 2. Registrar e iniciar sesión
 
@@ -101,7 +101,7 @@ Se pueden añadir tres capturas propias: servidor y dos clientes abiertos; inter
 
 ## Comprobación realizada
 
-Se compiló el código con `javac` y se probó el servidor mediante dos conexiones TCP locales, usando un archivo temporal de cuentas. Esta es la salida real de la comprobación (comando → respuesta):
+Se compiló el código con `javac` y se probó el servidor mediante dos conexiones TCP locales, usando un archivo temporal de cuentas. La versión simplificada se compiló para Java 8 y volvió a pasar esta comprobación. Esta es la salida real de la comprobación (comando → respuesta):
 
 ```text
 SAY sin login -> KO

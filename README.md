@@ -1,55 +1,71 @@
-# Chat sencillo en Java
+# Chat sencillo, explicado en el código
 
-Aplicación de consola para practicar sockets TCP, hilos y archivos. No necesita librerías externas. Usa un JDK 8 o posterior.
+Necesita Java 8 o posterior. No utiliza librerías externas.
 
-## Ejecutar en Eclipse
+## Cómo abrirlo en Eclipse
 
-1. Abrir este proyecto Java en Eclipse.
-2. Ejecutar `src/main/Servidor.java` con **Run As > Java Application**.
-3. Ejecutar `src/main/Cliente.java` dos veces para tener dos personas conectadas. `Main.java` también abre un cliente.
-4. En la vista Console, usar el selector de consolas para elegir cada cliente. Escribir los comandos y pulsar Enter.
-5. Seguir la demo de `DEMO.md`.
+1. Ejecuta `src/main/MainSrv.java`: es el servidor. Déjalo abierto.
+2. Ejecuta `src/main/Main.java`: es un cliente.
+3. Ejecuta `Main.java` otra vez: es el segundo cliente.
+4. Selecciona la consola de cada cliente en Eclipse para escribir los comandos de `DEMO.md`.
 
-El servidor se deja abierto durante la demo. Para detenerlo, usar el botón rojo de Eclipse. `EXIT` cierra solo el cliente que lo envía.
+Para salir de un cliente escribe EXIT. Para parar el servidor pulsa el botón rojo de Eclipse.
 
-## Ejecutar en una terminal
+## Qué hace cada archivo
 
-Desde la carpeta del proyecto, compilar una vez:
+- `MainSrv.java`: conserva la estructura del main que crea `Servidor(40000)`, abre las conexiones, llama a `pedirNombres`, entra en el bucle y cierra el servidor si termina.
+- `Main.java`: parte del main original del proyecto y abre un cliente.
+- `Cliente.java`: manda lo que escribes. Incluye un hilo Receptor para mostrar los mensajes que llegan mientras escribes.
+- `servidor/Servidor.java`: escucha las conexiones y procesa los comandos. Incluye un hilo AtenderCliente para cada conexión.
 
-```sh
-javac -encoding UTF-8 -d bin src/main/*.java
+`pedirNombres()` muestra una indicación. Los nombres se reciben con LOGIN dentro de los hilos: no hay una pregunta extra fuera del protocolo.
+
+## Idea del programa
+
+El cliente y el servidor se comunican por un socket, como un canal entre ambos. Cada comando y respuesta ocupa una línea. `println` envía una línea y `readLine` la recibe.
+
+Un hilo permite hacer otra tarea al mismo tiempo. El servidor usa uno por conexión y el cliente usa uno para recibir. La lista `clientes` guarda las sesiones autenticadas. `synchronized` permite procesar un comando a la vez para proteger la lista y el archivo.
+
+Las cuentas se buscan directamente en `usuarios.txt`, recorriendo sus líneas con Scanner. REGISTER añade una línea al archivo. Es menos eficiente que una base de datos, pero resulta sencillo para este ejercicio.
+
+## Protocolo
+
+```text
+REGISTER ana 1234
+LOGIN ana 1234
+SETNICK Anita
+SAY Hola a todos
+EXIT
 ```
 
-Abrir tres terminales en esa carpeta. En la primera:
+REGISTER, LOGIN y SETNICK devuelven OK o KO. REGISTER no inicia sesión. SAY requiere LOGIN y entrega `HEAR Anita Hola a todos` a todos los clientes autenticados, incluido quien lo envía. EXIT cierra la conexión sin respuesta. Los comandos se escriben en mayúsculas y sin punto y coma.
+
+Usuarios, nicks y contraseñas son una palabra sin espacios. Un nick no puede coincidir con el nick o la cuenta de otra persona conectada. No se puede iniciar sesión dos veces con la misma cuenta. SETNICK modifica el nombre visible de la sesión; la cuenta del archivo se mantiene. Un comando incorrecto devuelve KO.
+
+El servidor crea `usuarios.txt` al registrar la primera cuenta, en la carpeta desde la que se ejecuta. Las cuentas siguen disponibles al reiniciar. Para mantener el ejercicio simple, las contraseñas se guardan en texto plano: utiliza contraseñas inventadas para la demo.
+
+## Desde una terminal
+
+Compila desde la carpeta del proyecto:
 
 ```sh
-java -cp bin main.Servidor
+javac -encoding UTF-8 -d bin src/main/*.java src/servidor/*.java
 ```
 
-En cada una de las otras dos:
+En una terminal abre el servidor:
 
 ```sh
-java -cp bin main.Cliente
+java -cp bin main.MainSrv
 ```
 
-El puerto por defecto es 5000. Se puede cambiar con `java -cp bin main.Servidor 6000` y conectar con `java -cp bin main.Cliente localhost 6000`. Para conectar desde otro ordenador, sustituir `localhost` por la IP del servidor; ambos equipos deben tener conectividad y el puerto debe estar permitido.
+En otras dos terminales abre un cliente en cada una:
 
-## Cómo entender el código
+```sh
+java -cp bin main.Main
+```
 
-- **Servidor.java:** abre un `ServerSocket` y espera conexiones con `accept()`. Cada conexión tiene un hilo `Conexion`, que lee comandos, comprueba las cuentas y responde. El mapa `usuarios` contiene las cuentas; la lista `conectados` contiene las sesiones que han hecho LOGIN.
-- **Cliente.java:** abre un `Socket`. El hilo principal lee el teclado y envía líneas; otro hilo recibe respuestas y mensajes. Así se puede recibir un mensaje sin tener que escribir primero.
-- **Main.java:** llama a `Cliente.main(args)` para aprovechar la clase que ya tenía el proyecto.
-
-`BufferedReader.readLine()` recibe una línea. `PrintWriter.println()` envía una línea; el parámetro `true` hace que salga inmediatamente. Ambos extremos usan UTF-8. `synchronized` evita que dos hilos modifiquen las cuentas o sesiones al mismo tiempo.
-
-## Decisiones del protocolo
-
-Cada comando ocupa una línea, sin punto y coma al final. Los comandos se escriben en mayúsculas. REGISTER crea una cuenta, pero no inicia sesión. LOGIN inicia sesión y usa el nombre de usuario como nick inicial. SAY envía `HEAR <nick> <mensaje>` a todos los clientes autenticados, incluido el emisor; no envía un OK adicional. SETNICK cambia solo el nombre visible de la sesión, sin modificar la cuenta. EXIT cierra la conexión sin respuesta.
-
-Usuarios y nicks admiten de 1 a 20 letras sin acentos, números o guiones bajos. Las contraseñas son una palabra sin espacios. Los mensajes pueden contener espacios y acentos. No se admiten sesiones simultáneas de la misma cuenta ni nicks repetidos. Un comando desconocido, mal formado o no permitido recibe KO. SAY y SETNICK requieren LOGIN.
-
-`usuarios.txt` se crea al registrar la primera cuenta en la carpeta desde la que se ejecuta el servidor. Al reiniciar, el servidor vuelve a leerlo. Las contraseñas se guardan en texto plano para mantener sencillo este ejercicio: usar cuentas inventadas, nunca contraseñas reales. No hay cifrado, historial, interfaz gráfica ni recuperación automática de conexiones.
+Se utiliza localhost y el puerto 40000, siguiendo MainSrv. No hay menús de configuración ni dependencias.
 
 ## Entrega
 
-`entrega/OnlineChat.zip` incluye el proyecto Eclipse, el código del cliente y servidor, esta guía y `DEMO.md`. El documento de demo explica una sesión reproducible; se pueden añadir capturas propias y exportarlo a PDF si el profesor pide ese formato.
+`entrega/OnlineChat.zip` contiene el código, los archivos del proyecto Eclipse y estos documentos. `DEMO.md` incluye la sesión de ejemplo y resultados de una prueba real con dos conexiones.
