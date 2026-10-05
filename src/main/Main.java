@@ -3,8 +3,8 @@ package main;
 public class Main {
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		// En Eclipse: ejecutar Main para abrir un cliente.
+		Cliente.main(args);
 	}
 
 }
